@@ -83,15 +83,9 @@ func NewBaseService(log log15.Logger, name string, impl Service) *BaseService {
 // Implements Servce
 func (bs *BaseService) Start() (bool, error) {
 	if atomic.CompareAndSwapUint32(&bs.started, 0, 1) {
-		if atomic.LoadUint32(&bs.stopped) == 1 {
-			if bs.log != nil {
-				bs.log.Warn(Fmt("Not starting %v -- already stopped", bs.name), "impl", bs.impl)
-			}
-			return false, nil
-		} else {
-			if bs.log != nil {
-				bs.log.Info(Fmt("Starting %v", bs.name), "impl", bs.impl)
-			}
+		atomic.StoreUint32(&bs.stopped, 0)
+		if bs.log != nil {
+			bs.log.Info(Fmt("Starting %v", bs.name), "impl", bs.impl)
 		}
 		err := bs.impl.OnStart()
 		if err != nil {
@@ -117,6 +111,7 @@ func (bs *BaseService) OnStart() error { return nil }
 // Implements Service
 func (bs *BaseService) Stop() bool {
 	if atomic.CompareAndSwapUint32(&bs.stopped, 0, 1) {
+		atomic.StoreUint32(&bs.started, 0)
 		if bs.log != nil {
 			bs.log.Info(Fmt("Stopping %v", bs.name), "impl", bs.impl)
 		}
@@ -161,7 +156,7 @@ func (bs *BaseService) OnReset() error {
 
 // Implements Service
 func (bs *BaseService) IsRunning() bool {
-	return atomic.LoadUint32(&bs.started) == 1 && atomic.LoadUint32(&bs.stopped) == 0
+	return atomic.LoadUint32(&bs.started) == 1
 }
 
 func (bs *BaseService) Wait() {
