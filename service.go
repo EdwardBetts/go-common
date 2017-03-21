@@ -94,6 +94,7 @@ func (bs *BaseService) Start() (bool, error) {
 			atomic.StoreUint32(&bs.stopped, 1)
 			return false, err
 		}
+		bs.Quit = make(chan struct{})
 		return true, nil
 	} else {
 		if bs.log != nil {
