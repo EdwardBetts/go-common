@@ -94,7 +94,13 @@ func (bs *BaseService) Start() (bool, error) {
 			}
 		}
 		err := bs.impl.OnStart()
-		return true, err
+		if err != nil {
+			// revert flags
+			atomic.StoreUint32(&bs.started, 0)
+			atomic.StoreUint32(&bs.stopped, 1)
+			return false, err
+		}
+		return true, nil
 	} else {
 		if bs.log != nil {
 			bs.log.Debug(Fmt("Not starting %v -- already started", bs.name), "impl", bs.impl)
